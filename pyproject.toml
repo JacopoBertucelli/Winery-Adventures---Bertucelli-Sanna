@@ -1,0 +1,42 @@
+[project]
+name = "winery-adventures"
+version = "0.1.0"
+description = "Pipeline per l'analisi dei dati di una cantina"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "joblib>=1.3",
+    "numba>=0.59",
+    "numpy>=1.26",
+    "polars>=1.0",
+    "wandb>=0.17",
+]
+
+[project.scripts]
+winery-adventures = "winery_adventures.main:main"
+winery-dashboard = "winery_adventures.dashboard:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"winery_adventures/dashboard.py" = ["E501"]
+
+[tool.setuptools.packages.find]
+include = ["winery_adventures*"]
