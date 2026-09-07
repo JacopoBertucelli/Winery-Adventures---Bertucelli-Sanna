@@ -1,7 +1,7 @@
 # Winery Adventures
 
 Pipeline Python per analizzare le rilevazioni delle cisterne di fermentazione.
-È mantenuta intenzionalmente piccola, ma copre i requisiti del tutor: OOP,
+È mantenuta intenzionalmente piccola, ma copre i requisiti: OOP,
 Polars, Numba, Joblib, Weights & Biases, Pytest, CI, UML e performance report.
 
 ## Installazione riproducibile
