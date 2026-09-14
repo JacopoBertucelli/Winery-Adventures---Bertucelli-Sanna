@@ -1,62 +1,144 @@
 # Winery Adventures
 
-Pipeline Python per analizzare le rilevazioni delle cisterne di fermentazione.
-È mantenuta intenzionalmente piccola, ma copre i requisiti: OOP,
-Polars, Numba, Joblib, Weights & Biases, Pytest, CI, UML e performance report.
+Pipeline Python per monitorare le cisterne di fermentazione: trasforma dati
+TSV in un CSV analitico e in una dashboard HTML leggibile. Il progetto resta
+intenzionalmente piccolo, ma include OOP, Polars, Numba, Joblib, Weights &
+Biases, Pytest, CI, UML e report prestazionale.
 
-## Installazione riproducibile
-
-Python 3.10+ e `uv` sono sufficienti. Il lockfile crea l'ambiente locale
-`.venv/`, che è escluso da Git.
+## Avvio rapido
 
 ```bash
 python3 -m pip install uv
 uv sync --locked --extra dev
-source .venv/bin/activate       # Linux/macOS
-# .venv\Scripts\Activate.ps1    # Windows PowerShell
-```
 
-In alternativa, dopo aver creato `.venv` con `python -m venv .venv`, usare
-`python -m pip install -e ".[dev]"`.
-
-## Eseguire
-
-```bash
-winery-adventures data/sensors_sample.tsv output/results.csv \
+uv run winery-adventures data/sensors_sample.tsv output/results.csv \
   --tank-info data/tank_info_sample.tsv --no-wandb --n-jobs 1
-winery-dashboard output/results.csv output/dashboard.html
+uv run winery-dashboard output/results.csv output/dashboard.html
 ```
 
-Aprire `output/dashboard.html` nel browser. La dashboard è un singolo file
-HTML senza framework: tabella pH medio, temperatura media e stress per
-cisterna, anomalie dichiarate e un piccolo trend della temperatura.
+Aprire `output/dashboard.html` nel browser. `output/` è ignorata da Git.
 
-Per registrare lo stress su Weights & Biases, omettere `--no-wandb` dopo
-`wandb login`.
+```mermaid
+flowchart LR
+    TSV[Dati sensori TSV] --> IO[Polars + Joblib]
+    INFO[Informazioni cisterne] --> IO
+    IO --> TRANSFORM[Trasformazioni Polars]
+    TRANSFORM --> STRESS["Stress O(n²) con Numba"]
+    STRESS --> CSV[CSV dei risultati]
+    CSV --> DASH[Dashboard HTML]
+    STRESS -. opzionale .-> WANDB[Weights & Biases]
+```
 
-## Verifica e prestazioni
+## Cosa produce
+
+| Indicatore | Utilità |
+|---|---|
+| pH medio e numero di letture | Stato sintetico di ogni cisterna |
+| Temperatura e deviazione da 26 °C | Evidenzia condizioni termiche non standard |
+| Stress di fermentazione | Confronta la variabilità interna delle cisterne |
+| Conteggio per vitigno | Disponibile quando si fornisce `--tank-info` |
+
+La dashboard legge **solo** il CSV prodotto dalla pipeline: mostra pH,
+temperatura, stress, anomalie semplici e trend. Il confronto delle temperature
+permette di disattivare le singole cisterne.
+
+![Sintesi della dashboard sui dati sample](docs/assets/dashboard-summary.svg)
+
+*Anteprima statica dei dati sample: la dashboard completa aggiunge i trend
+temporali e il filtro interattivo per cisterna.*
+
+## Architettura essenziale
+
+```mermaid
+sequenceDiagram
+    actor Analista
+    participant CLI
+    participant IO as Polars / Joblib
+    participant Pipeline
+    participant Numba
+    participant WandB as W&B
+
+    Analista->>CLI: avvia analisi
+    CLI->>IO: carica e prepara TSV
+    IO-->>CLI: DataFrame
+    CLI->>Pipeline: trasformazioni e stress
+    Pipeline->>Numba: formula O(n²) per cisterna
+    Numba-->>Pipeline: stress_score
+    Pipeline-->>CLI: CSV finale
+    CLI->>WandB: log opzionale dello stress
+```
+
+Le responsabilità sono separate in pochi moduli:
+
+```text
+winery_adventures/
+├── io.py                # caricamento TSV, validazione e Joblib
+├── transformations.py   # indicatori Polars
+├── computations.py      # formula Numba dello stress
+├── pipeline.py          # orchestrazione
+├── reporting.py         # logging W&B opzionale
+├── dashboard.py         # report HTML dal CSV
+└── main.py              # CLI
+```
+
+I diagrammi completi sono disponibili in [docs/uml](docs/uml):
+[classi](docs/uml/class_diagram.md), [sequenza](docs/uml/sequence_diagram.md)
+e [casi d'uso](docs/uml/use_case_diagram.md).
+
+## Installazione
+
+Servono Python 3.10+ e `uv`. Il lockfile crea `.venv/` e blocca le versioni
+delle dipendenze.
 
 ```bash
-pytest
-ruff check .
-ruff format --check .
-python data_generator.py --rows 100000 --tanks 100
-python scripts/benchmark.py --rows 100000 --tanks 100
+python3 -m pip install uv
+uv sync --locked --extra dev
 ```
 
-Il benchmark aggiorna [il report](docs/performance/performance_report.md).
-I tre diagrammi richiesti sono in [docs/uml](docs/uml/): classi, sequenza e
-casi d'uso. La CI esegue Ruff e Pytest su ogni push e pull request verso
-`main`.
+In alternativa:
 
-## Cosa calcola la pipeline
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+```
 
-- pH medio e numero di rilevazioni per cisterna;
-- conteggio delle rilevazioni per vitigno, se viene fornito `--tank-info`;
-- deviazione dalla temperatura standard di 26 °C, scalata per volume;
-- stress di fermentazione per cisterna con la formula `O(n²)` compilata da
-  Numba;
-- preparazione per cisterna con Joblib e salvataggio del CSV finale.
+Su Windows l'attivazione è `.venv\Scripts\Activate.ps1`.
 
-Il CSV risultante è l'unica sorgente della dashboard; W&B è solo una seconda
-visualizzazione facoltativa delle metriche di stress.
+## Esecuzione
+
+```bash
+# Pipeline locale e riproducibile sui dati sample
+uv run winery-adventures data/sensors_sample.tsv output/results.csv \
+  --tank-info data/tank_info_sample.tsv --no-wandb --n-jobs 1
+
+# Dashboard dal CSV appena generato
+uv run winery-dashboard output/results.csv output/dashboard.html
+```
+
+Per registrare lo stress su Weights & Biases, eseguire `wandb login` e omettere
+`--no-wandb`.
+
+## Qualità, test e prestazioni
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+
+# Dataset grande e benchmark riproducibile
+uv run python data_generator.py --rows 100000 --tanks 100
+uv run python scripts/benchmark.py --rows 100000 --tanks 100
+```
+
+La CI esegue Ruff e Pytest su push e pull request verso `main`. Il benchmark
+confronta la formula Python con Numba e misura la pipeline Polars + Joblib;
+aggiorna [il report](docs/performance/performance_report.md).
+
+## Decisioni tecniche
+
+- **Polars** mantiene le trasformazioni colonnari e i raggruppamenti veloci.
+- **Numba** compila la formula di stress richiesta, che è `O(n²)` per cisterna.
+- **Joblib** prepara in parallelo le rilevazioni raggruppate per cisterna.
+- **W&B** è opzionale: l'esecuzione locale e i test non richiedono rete.
+- **Dashboard HTML**: nessun framework frontend; un file apribile localmente.
