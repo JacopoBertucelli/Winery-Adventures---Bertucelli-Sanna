@@ -34,15 +34,38 @@ def test_add_num_readings_per_tank(sensors_df):
     assert out_df["tank_num_readings"][2] == 1
 
 
-def test_add_num_readings_per_grape_variety(sensors_df, tank_info_df_grape_variety_split):
+def test_add_num_readings_per_grape_variety(
+    sensors_df, tank_info_df_grape_variety_split
+):
     transformer = WineryTransformer(tank_info_df_grape_variety_split)
     out_df = transformer.add_num_readings_per_grape_variety(sensors_df)
 
-    assert out_df.filter(pl.col("grape_variety") == "CannonauVellutato")["grape_variety_num_readings"][0] == 3
-    assert out_df.filter(pl.col("grape_variety") == "CannonauVellutato")["tank_id"].unique().len() == 2
-    assert out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")["grape_variety_num_readings"][0] == 1
-    assert out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")["tank_id"][0] == 2
-    assert out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")["tank_id"].len() == 1
+    assert (
+        out_df.filter(pl.col("grape_variety") == "CannonauVellutato")[
+            "grape_variety_num_readings"
+        ][0]
+        == 3
+    )
+    assert (
+        out_df.filter(pl.col("grape_variety") == "CannonauVellutato")["tank_id"]
+        .unique()
+        .len()
+        == 2
+    )
+    assert (
+        out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")[
+            "grape_variety_num_readings"
+        ][0]
+        == 1
+    )
+    assert (
+        out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")["tank_id"][0]
+        == 2
+    )
+    assert (
+        out_df.filter(pl.col("grape_variety") == "VermentinoAromatico")["tank_id"].len()
+        == 1
+    )
 
     transformer = WineryTransformer(None)
     with pytest.raises(AttributeError):

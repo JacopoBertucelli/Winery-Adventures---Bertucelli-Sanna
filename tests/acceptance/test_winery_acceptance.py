@@ -5,7 +5,9 @@ from winery_adventures.main import run_full_pipeline
 
 
 @pytest.mark.slow
-def test_winery_pipeline_end_to_end(tmp_path, monkey_joblib, monkey_wandb_run, sensors_df, tank_info_df):
+def test_winery_pipeline_end_to_end(
+    tmp_path, monkey_joblib, monkey_wandb_run, sensors_df, tank_info_df
+):
     """
     1) Create a CSV with columns [tank_id, time, pH, temp, quantity_liters].
     2) Create an optional 'tank_info' CSV to test the join.
@@ -29,7 +31,9 @@ def test_winery_pipeline_end_to_end(tmp_path, monkey_joblib, monkey_wandb_run, s
     )
 
     # 3) Check wandb logs
-    assert any("stress_score" in d for d in monkey_wandb_run.logs), "No stress_score logged to wandb"
+    assert any("stress_score" in d for d in monkey_wandb_run.logs), (
+        "No stress_score logged to wandb"
+    )
 
     # 4) Read final CSV
     df_result = pl.read_csv(output_csv)
