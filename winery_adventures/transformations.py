@@ -38,7 +38,7 @@ class WineryTransformer(BaseWineryAnalyzer):
     def add_num_readings_per_grape_variety(self, df: pl.DataFrame) -> pl.DataFrame:
         """Unisce i vitigni e conta le rilevazioni per ciascun vitigno."""
         if self.tank_info is None:
-            raise ValueError("Le informazioni sulle cisterne non sono disponibili")
+            raise AttributeError("Le informazioni sulle cisterne non sono disponibili")
         required = {"tank_id", "grape_variety"}
         missing = required.difference(self.tank_info.columns)
         if missing or self.tank_info["tank_id"].n_unique() != self.tank_info.height:
