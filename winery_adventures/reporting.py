@@ -12,10 +12,22 @@ class WandbReporter:
     """Registra lo stress di ciascuna cisterna su Weights & Biases."""
 
     def __init__(self, project_name: str = "Winery-Adventures") -> None:
+        """Imposta il progetto W&B a cui inviare le metriche.
+
+        Args:
+            project_name: Nome del progetto W&B.
+        """
         self.project_name = project_name
 
     def log(self, df: pl.DataFrame) -> None:
-        """Registra uno stress per cisterna senza bloccare la pipeline."""
+        """Registra uno stress per cisterna senza bloccare la pipeline.
+
+        Args:
+            df: DataFrame che contiene ``tank_id`` e ``stress_score``.
+
+        Raises:
+            ValueError: Se ``stress_score`` non è presente nel risultato.
+        """
         if "stress_score" not in df.columns:
             raise ValueError("La colonna stress_score non è disponibile per il logging")
         run = None

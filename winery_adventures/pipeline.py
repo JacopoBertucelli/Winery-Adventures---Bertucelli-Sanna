@@ -12,18 +12,32 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WineryPipeline:
-    """Esegue in sequenza trasformazioni e analisi della cantina."""
+    """Orchestra in sequenza trasformazioni e analisi della cantina."""
 
     def __init__(
         self,
         analyzers: Iterable[BaseWineryAnalyzer],
         project_name: str = "Winery-Adventures",
     ) -> None:
+        """Memorizza gli analizzatori e il nome opzionale del progetto W&B.
+
+        Args:
+            analyzers: Analizzatori che implementano il contratto comune.
+            project_name: Nome del progetto usato dal reporter W&B.
+        """
         self.analyzers = list(analyzers)
         self.project_name = project_name
 
     def run(self, df: pl.DataFrame, log_to_wandb: bool = False) -> pl.DataFrame:
-        """Esegue gli analizzatori e, se richiesto, registra le metriche."""
+        """Esegue gli analizzatori e, se richiesto, registra le metriche.
+
+        Args:
+            df: DataFrame preparato su cui applicare gli analizzatori.
+            log_to_wandb: Se ``True``, registra lo stress finale su W&B.
+
+        Returns:
+            DataFrame restituito dall'ultimo analizzatore della catena.
+        """
         for analyzer in self.analyzers:
             LOGGER.info("Esecuzione %s", analyzer.__class__.__name__)
             df = analyzer.analyze_data(df)
@@ -32,5 +46,9 @@ class WineryPipeline:
         return df
 
     def log_to_wandb(self, df: pl.DataFrame) -> None:
-        """Registra i risultati su Weights & Biases."""
+        """Registra i risultati su Weights & Biases.
+
+        Args:
+            df: Risultato della pipeline contenente ``stress_score``.
+        """
         WandbReporter(self.project_name).log(df)

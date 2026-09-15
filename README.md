@@ -132,8 +132,9 @@ uv run python scripts/benchmark.py --rows 100000 --tanks 100
 ```
 
 La CI esegue Ruff e Pytest su push e pull request verso `main`. Il benchmark
-confronta la formula Python con Numba e misura la pipeline Polars + Joblib;
-aggiorna [il report](docs/performance/performance_report.md).
+confronta la formula Python con Numba e misura tempo e picco di memoria Python
+della pipeline Polars + Joblib; aggiorna
+[il report](docs/performance/performance_report.md).
 
 ## Decisioni tecniche
 

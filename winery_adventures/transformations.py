@@ -6,15 +6,35 @@ from winery_adventures.base import BaseWineryAnalyzer
 
 
 class WineryTransformer(BaseWineryAnalyzer):
-    """Aggiunge gli indicatori descrittivi richiesti alla pipeline."""
+    """Aggiunge gli indicatori descrittivi richiesti alla pipeline.
+
+    Gli indicatori comprendono pH medio, conteggi per cisterna e vitigno e
+    deviazione dalla temperatura standard.
+    """
 
     STANDARD_TEMPERATURE = 26.0
 
     def __init__(self, tank_info: pl.DataFrame | None = None) -> None:
+        """Inizializza il transformer con le informazioni opzionali sulle cisterne.
+
+        Args:
+            tank_info: DataFrame con ``tank_id`` e ``grape_variety``; se assente,
+                la trasformazione per vitigno viene omessa.
+        """
         self.tank_info = tank_info
 
     def analyze_data(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Applica pH medio, conteggi, vitigni e deviazione termica."""
+        """Applica pH medio, conteggi, vitigni e deviazione termica.
+
+        Args:
+            df: Rilevazioni validate dei sensori.
+
+        Returns:
+            DataFrame con gli indicatori descrittivi aggiunti.
+
+        Raises:
+            ValueError: Se mancano le colonne minime delle rilevazioni.
+        """
         required = {"tank_id", "pH", "temp"}
         missing = required.difference(df.columns)
         if missing:
@@ -26,17 +46,42 @@ class WineryTransformer(BaseWineryAnalyzer):
         return self.add_temperature_deviation(result)
 
     def add_avg_ph_per_tank(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Aggiunge il pH medio della cisterna a ogni rilevazione."""
+        """Aggiunge il pH medio della cisterna a ogni rilevazione.
+
+        Args:
+            df: Rilevazioni che contengono ``tank_id`` e ``pH``.
+
+        Returns:
+            DataFrame con la colonna ``avg_pH_per_tank``.
+        """
         return df.with_columns(
             pl.col("pH").mean().over("tank_id").alias("avg_pH_per_tank")
         )
 
     def add_num_readings_per_tank(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Aggiunge il numero di rilevazioni della cisterna."""
+        """Aggiunge il numero di rilevazioni della cisterna.
+
+        Args:
+            df: Rilevazioni che contengono ``tank_id``.
+
+        Returns:
+            DataFrame con la colonna ``tank_num_readings``.
+        """
         return df.with_columns(pl.len().over("tank_id").alias("tank_num_readings"))
 
     def add_num_readings_per_grape_variety(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Unisce i vitigni e conta le rilevazioni per ciascun vitigno."""
+        """Unisce i vitigni e conta le rilevazioni per ciascun vitigno.
+
+        Args:
+            df: Rilevazioni a cui associare i vitigni.
+
+        Returns:
+            DataFrame espanso per vitigno con ``grape_variety_num_readings``.
+
+        Raises:
+            AttributeError: Se ``tank_info`` non è stato fornito.
+            ValueError: Se le informazioni sulle cisterne sono incomplete o duplicate.
+        """
         if self.tank_info is None:
             raise AttributeError("Le informazioni sulle cisterne non sono disponibili")
         required = {"tank_id", "grape_variety"}
@@ -55,7 +100,14 @@ class WineryTransformer(BaseWineryAnalyzer):
         )
 
     def add_temperature_deviation(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Aggiunge la deviazione da 26 °C, scalata su 1000 litri se disponibile."""
+        """Aggiunge la deviazione da 26 °C, scalata su 1000 litri se disponibile.
+
+        Args:
+            df: Rilevazioni che contengono la colonna ``temp``.
+
+        Returns:
+            DataFrame con deviazione semplice o scalata per ``quantity_liters``.
+        """
         deviation = (pl.col("temp") - self.STANDARD_TEMPERATURE).abs()
         if "quantity_liters" not in df.columns:
             return df.with_columns(deviation.alias("temperature_deviation"))

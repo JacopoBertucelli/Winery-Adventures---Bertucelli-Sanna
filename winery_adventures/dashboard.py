@@ -25,7 +25,17 @@ COLORS = [
 def _anomalies(
     mean_ph: float, mean_temp: float, stress: float, stress_limit: float
 ) -> str:
-    """Restituisce le anomalie semplici e dichiarate nella dashboard."""
+    """Restituisce le anomalie semplici e dichiarate nella dashboard.
+
+    Args:
+        mean_ph: pH medio della cisterna.
+        mean_temp: Temperatura media della cisterna in gradi Celsius.
+        stress: Stress della cisterna.
+        stress_limit: Soglia di stress calcolata sul riepilogo.
+
+    Returns:
+        Testo con una o più anomalie, oppure ``nessuna``.
+    """
     messages = []
     if not 3.0 <= mean_ph <= 4.0:
         messages.append("pH fuori intervallo 3.0–4.0")
@@ -37,7 +47,14 @@ def _anomalies(
 
 
 def _temperature_chart(df: pl.DataFrame) -> str:
-    """Crea piccoli grafici separati, con la stessa scala per ogni cisterna."""
+    """Crea piccoli grafici separati con la stessa scala per ogni cisterna.
+
+    Args:
+        df: Rilevazioni finali della pipeline, con temperatura e tempo.
+
+    Returns:
+        Frammento HTML/SVG dei grafici oppure una stringa vuota senza temperature.
+    """
     readings = (
         df.filter(pl.col("temp").is_not_null()).sort("time").with_row_index("_index")
     )
@@ -54,9 +71,11 @@ def _temperature_chart(df: pl.DataFrame) -> str:
     last_time = str(readings["time"][-1]).replace("T", " ")[5:16]
 
     def x_position(index: int) -> float:
+        """Converte l'indice ordinato di una lettura nella coordinata X SVG."""
         return left + index * chart_width / max(readings.height - 1, 1)
 
     def y_position(temperature: float) -> float:
+        """Converte una temperatura nella coordinata Y SVG condivisa."""
         return top + (high - temperature) * chart_height / max(high - low, 1)
 
     cards = []
@@ -107,7 +126,14 @@ def _temperature_chart(df: pl.DataFrame) -> str:
 
 
 def _interactive_comparison(df: pl.DataFrame) -> str:
-    """Crea un confronto in cui le singole cisterne possono essere nascoste."""
+    """Crea un confronto in cui le singole cisterne possono essere nascoste.
+
+    Args:
+        df: Rilevazioni finali della pipeline, con temperatura e tempo.
+
+    Returns:
+        Frammento HTML/SVG interattivo oppure una stringa vuota senza temperature.
+    """
     readings = (
         df.filter(pl.col("temp").is_not_null()).sort("time").with_row_index("_index")
     )
@@ -122,9 +148,11 @@ def _interactive_comparison(df: pl.DataFrame) -> str:
     chart_width, chart_height = width - left - right, height - top - bottom
 
     def x_position(index: int) -> float:
+        """Converte l'indice ordinato di una lettura nella coordinata X SVG."""
         return left + index * chart_width / max(readings.height - 1, 1)
 
     def y_position(temperature: float) -> float:
+        """Converte una temperatura nella coordinata Y SVG condivisa."""
         return top + (high - temperature) * chart_height / max(high - low, 1)
 
     grid, labels = [], []
@@ -185,7 +213,18 @@ def _interactive_comparison(df: pl.DataFrame) -> str:
 
 
 def create_dashboard(csv_path: str | Path, output_path: str | Path) -> Path:
-    """Legge il CSV della pipeline e salva un report HTML autosufficiente."""
+    """Legge il CSV della pipeline e salva un report HTML autosufficiente.
+
+    Args:
+        csv_path: Percorso del CSV prodotto dalla pipeline.
+        output_path: Percorso del file HTML da creare.
+
+    Returns:
+        Percorso della dashboard HTML generata.
+
+    Raises:
+        ValueError: Se il CSV non contiene le colonne richieste dalla dashboard.
+    """
     df = pl.read_csv(csv_path)
     missing = REQUIRED_COLUMNS.difference(df.columns)
     if missing:
@@ -225,7 +264,11 @@ def create_dashboard(csv_path: str | Path, output_path: str | Path) -> Path:
 
 
 def main() -> None:
-    """Crea la dashboard dal CSV indicato in riga di comando."""
+    """Crea la dashboard dal CSV indicato in riga di comando.
+
+    Returns:
+        None. Il percorso della dashboard creata viene stampato nel terminale.
+    """
     parser = argparse.ArgumentParser(
         description="Crea la dashboard HTML della cantina."
     )

@@ -25,7 +25,19 @@ def run_full_pipeline(
     log_to_wandb: bool = True,
     n_jobs: int = -1,
 ) -> pl.DataFrame:
-    """Carica TSV, esegue la pipeline e salva il CSV finale."""
+    """Carica TSV, prepara i dati, esegue la pipeline e salva il CSV finale.
+
+    Args:
+        input_csv: Percorso del TSV con le rilevazioni dei sensori.
+        tank_info_csv: Percorso opzionale del TSV descrittivo delle cisterne.
+        output_csv: Percorso del CSV finale da creare.
+        project_name: Nome del progetto usato per il logging W&B.
+        log_to_wandb: Abilita o disabilita il logging su W&B.
+        n_jobs: Numero di worker Joblib per la preparazione dei gruppi.
+
+    Returns:
+        DataFrame finale, già salvato anche nel percorso ``output_csv``.
+    """
     sensors = prepare_sensor_data(load_sensor_data(input_csv), n_jobs)
     tank_info = load_tank_info(tank_info_csv) if tank_info_csv else None
     result = WineryPipeline(
@@ -36,7 +48,11 @@ def run_full_pipeline(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Crea il parser degli argomenti della riga di comando."""
+    """Crea il parser degli argomenti della riga di comando.
+
+    Returns:
+        Parser configurato per i percorsi TSV/CSV e le opzioni di esecuzione.
+    """
     parser = argparse.ArgumentParser(
         description="Analizza i dati dei sensori della cantina."
     )
@@ -54,7 +70,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """Esegue la pipeline da riga di comando."""
+    """Esegue la pipeline a partire dagli argomenti della riga di comando.
+
+    Returns:
+        None. Il risultato viene scritto nel CSV richiesto dall'utente.
+    """
     args = build_parser().parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     run_full_pipeline(
