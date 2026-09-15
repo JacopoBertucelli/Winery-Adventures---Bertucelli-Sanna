@@ -6,7 +6,11 @@ import polars as pl
 
 
 class BaseWineryAnalyzer(ABC):
-    """Interfaccia comune per gli elementi della pipeline."""
+    """Definisce il contratto comune degli analizzatori della pipeline.
+
+    Le sottoclassi ricevono un DataFrame Polars e restituiscono il DataFrame
+    arricchito senza modificare l'interfaccia usata dalla pipeline.
+    """
 
     @abstractmethod
     def analyze_data(self, df: pl.DataFrame) -> pl.DataFrame:

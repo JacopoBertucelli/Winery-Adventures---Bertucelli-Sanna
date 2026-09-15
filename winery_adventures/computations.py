@@ -11,7 +11,16 @@ from winery_adventures.base import BaseWineryAnalyzer
 def pairwise_stress_function(
     pH_vals: np.ndarray, temp_vals: np.ndarray, quantity_vals: np.ndarray
 ) -> float:
-    """Calcola la formula O(n²) di stress indicata dal tutor."""
+    """Calcola con Numba la formula O(n²) di stress per una cisterna.
+
+    Args:
+        pH_vals: Array NumPy dei valori di pH.
+        temp_vals: Array NumPy dei valori di temperatura.
+        quantity_vals: Array NumPy dei volumi in litri, tutti positivi.
+
+    Returns:
+        Stress medio delle coppie ordinate; ``0.0`` se l'array è vuoto.
+    """
     n_readings = len(pH_vals)
     if n_readings == 0:
         return 0.0
@@ -28,10 +37,20 @@ def pairwise_stress_function(
 
 
 class WineryHPCComputations(BaseWineryAnalyzer):
-    """Calcola e aggiunge lo stress di fermentazione per cisterna."""
+    """Calcola e aggiunge lo stress di fermentazione per ciascuna cisterna."""
 
     def analyze_data(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Applica la funzione Numba ai dati validi di ogni cisterna."""
+        """Applica la funzione Numba ai dati validi di ogni cisterna.
+
+        Args:
+            df: Rilevazioni con pH, temperatura, volume e identificativo cisterna.
+
+        Returns:
+            DataFrame originale con la colonna ``stress_score`` per cisterna.
+
+        Raises:
+            ValueError: Se manca una colonna necessaria al calcolo.
+        """
         required = {"tank_id", "pH", "temp", "quantity_liters"}
         missing = required.difference(df.columns)
         if missing:
